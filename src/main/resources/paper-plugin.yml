@@ -1,0 +1,9 @@
+name: Tiltified
+description: $description
+version: '${version}'
+
+main: me.iris.tiltified.Tiltified
+api-version: '26.1.2'
+load: STARTUP
+
+authors: [ Iris ]
