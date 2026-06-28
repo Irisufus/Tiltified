@@ -1,0 +1,4 @@
+client-id: 'YOUR_TILTIFY_CLIENT_ID'
+client-secret: 'YOUR_TILTIFY_CLIENT_SECRET'
+campaign-id: 'YOUR_TILTIFY_CAMPAIGN_ID'
+request-interval: 60 # in ticks

@@ -7,12 +7,12 @@ import java.net.URI
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 
-class TiltifyCampaignRequest(val apiKey: String, val campaignId: String) {
+class TiltifyCampaign(val accessToken: String, val campaignId: String) {
     init {
-        if (apiKey.isEmpty() || campaignId.isEmpty()) {
-            throw IllegalArgumentException("apiKey or campaignId cannot be empty")
+        if (accessToken.isEmpty() || campaignId.isEmpty()) {
+            throw IllegalArgumentException("accessToken or campaignId cannot be empty")
         }
-        if (apiKey == "YOUR_TILTIFY_API_KEY" || campaignId == "YOUR_TILTIFY_CAMPAIGN_ID") {
+        if (accessToken == "YOUR_TILTIFY_ACCESS_TOKEN" || campaignId == "YOUR_TILTIFY_CAMPAIGN_ID") {
             throw IllegalArgumentException("You forgot to change the config or this is the first launch!")
         }
     }
@@ -21,12 +21,12 @@ class TiltifyCampaignRequest(val apiKey: String, val campaignId: String) {
     private val processedDonationIds = mutableSetOf<String>()
 
     fun startRequests() {
-        requestTask = Tiltified.instance.server.scheduler.runTaskTimerAsynchronously(Tiltified.instance, Runnable
+        requestTask = Tiltified.plugin.server.scheduler.runTaskTimerAsynchronously(Tiltified.plugin, Runnable
             {
                 fetchDonations()
             },
             0L,
-            Tiltified.instance.config.getInt("requestInterval").toLong()
+            Tiltified.plugin.config.getInt("request-interval").toLong()
         )
     }
 
@@ -34,12 +34,12 @@ class TiltifyCampaignRequest(val apiKey: String, val campaignId: String) {
         requestTask.cancel()
     }
 
-    fun fetchDonations() {
+    private fun fetchDonations() {
         try {
             val url = "https://v5api.tiltify.com/api/public/campaigns/$campaignId/donations?limit=10"
             val request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
-                .header("Authorization", "Bearer $apiKey")
+                .header("Authorization", "Bearer ${Tiltified.instance.getAccessToken()}")
                 .header("Accept", "application/json")
                 .GET()
                 .build()
@@ -47,7 +47,7 @@ class TiltifyCampaignRequest(val apiKey: String, val campaignId: String) {
             val response = Tiltified.httpClient.send(request, HttpResponse.BodyHandlers.ofString())
 
             if (response.statusCode() != 200) {
-                Tiltified.instance.logger.warning("Failed to fetch donations. HTTP Status Code: ${response.statusCode()}")
+                Tiltified.plugin.logger.warning("Failed to fetch donations. HTTP Status Code: ${response.statusCode()}")
                 return
             }
 
@@ -64,19 +64,19 @@ class TiltifyCampaignRequest(val apiKey: String, val campaignId: String) {
                     processedDonationIds.add(donationId)
                 }
 
-                val donorName = if (donation.has("donor_name")) donation["donor_name"].asString else "Anonymous"
+                val donorName = if (donation.has("donor_name")) donation["donor_name"].asString else "Unknown"
                 val amount = donation["amount"].asJsonObject["value"].asDouble
                 val comment = if (donation.has("comment")) donation["comment"].asString else ""
 
-                Tiltified.instance.server.scheduler.runTask(Tiltified.instance, Runnable {
-                    Tiltified.instance.server.pluginManager.callEvent(
-                        TiltifyDonationEvent(donorName, amount, comment)
+                Tiltified.plugin.server.scheduler.runTask(Tiltified.plugin, Runnable {
+                    Tiltified.plugin.server.pluginManager.callEvent(
+                        TiltifyDonationEvent(campaignId, donorName, amount, comment)
                     )
                 })
             }
 
         } catch (e: Exception) {
-            Tiltified.instance.logger.severe("Error fetching dontaions: ${e.message}")
+            Tiltified.plugin.logger.severe("Error fetching dontaions: ${e.message}")
         }
     }
 }

@@ -2,7 +2,7 @@ name: Tiltified
 description: $description
 version: '${version}'
 
-main: me.iris.tiltified.Tiltified
+main: me.iris.tiltified.TiltifiedPlugin
 api-version: '26.1.2'
 load: STARTUP
 
