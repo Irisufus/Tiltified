@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm") version "2.3.21"
     id("com.gradleup.shadow") version "9.4.3"
     id("xyz.jpenilla.run-paper") version "3.0.2"
+    `maven-publish`
 }
 
 repositories {
@@ -35,6 +36,27 @@ tasks {
         val props = mapOf("version" to version, "description" to project.description)
         filesMatching("paper-plugin.yml") {
             expand(props)
+        }
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "astrofoxRepository"
+            url = uri("https://maven.femboys.tech/releases")
+            credentials(PasswordCredentials::class)
+            authentication {
+                create<BasicAuthentication>("basic")
+            }
+        }
+    }
+    publications {
+        create<MavenPublication>("maven") {
+            groupId = "me.iris"
+            artifactId = "tiltified"
+            version = "${property("version")}"
+            from(components["java"])
         }
     }
 }
